@@ -77,7 +77,7 @@ def main(args):
     # trainer
     print('initializing trainer..')
     trainer = Trainer(model, criterion, args.save_path, lr_scheduler, args.job_name,\
-                      mode=args.mode)
+                      mode=args.mode, pred_neutral=args.pred_neutral)
     train_sampler = GivenIterationSampler(train_dataset, args.max_iter+32, args.batch_size,
                                                      last_iter=last_iter)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False,\

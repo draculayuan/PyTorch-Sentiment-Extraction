@@ -7,11 +7,15 @@ from transformers import BertTokenizer
 
 class Trainer(BaseTrainer):
 
-    def __init__(self, model, criterion, save_path, scheduler=None, job_name=None, mode='baseline'):
+    def __init__(self, model, criterion, save_path, scheduler=None, job_name=None, mode='baseline', pred_neutral=True):
         super(Trainer, self).__init__(model, criterion, save_path, scheduler, job_name)
         self.mode = mode
+        self.pred_neutral = pred_neutral
         self.tokenizer = BertTokenizer.from_pretrained(
             'bert-base-uncased', do_lower_case=True)
+        print('\n\n Trainer Initialized with training mode: {}'.format(self.mode))
+        if not self.pred_neutral:
+            print('Igoring neutral when predicting sentiment')
 
     def performance(self, output, text, mask, sel_label, label):
         def jaccard(str1, str2): 
