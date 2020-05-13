@@ -1,0 +1,26 @@
+common:
+    batch_size: 32
+    mode: 'baseline'
+
+    max_iter: 25000
+    warmup_steps: 0
+    warmup_lr: 0
+    base_lr: 0.0001
+    lr_steps: [5000, 7000, 9000, 11000, 13000, 15000, 17000, 19000, 21000, 23000] 
+    lr_mults: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+
+    optim: 'adam'
+    momentum: 0.9
+    weight_decay: 0.0005
+
+    val_freq: 1000
+    print_freq: 100
+    load_path: ''
+    resume_opt: False
+    save_path: 'ckpts/debug'
+
+    train_file: '/home/liu/DL_workstation/tweet-sent/data/trainset.csv'
+    test_file: '/home/liu/DL_workstation/tweet-sent/data/valset.csv'
+    max_length: 64
+
+
