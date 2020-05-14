@@ -37,7 +37,8 @@ def main(args):
 
     infer_dataset = InferDataset(
         args.test_file,
-        args.max_length
+        args.max_length,
+        args.qa
     )
     infer_loader = DataLoader(infer_dataset, batch_size=args.batch_size, shuffle=False,
         num_workers=1, pin_memory=False, collate_fn=infer_collate_fn)

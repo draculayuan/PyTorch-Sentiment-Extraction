@@ -25,7 +25,7 @@ class BaseTrainer():
         train_losses = AverageMeter(10)
         train_acc = AverageMeter(10)
         
-        for batch_index, (text, mask, sel_label, label) in enumerate(train_loader):
+        for batch_index, (text, mask, sel_label, label, type_id) in enumerate(train_loader):
             curr_step = start_iter+batch_index
             self.scheduler.step(curr_step) # for model optimizer
             lr = optimizer.param_groups[0]['lr']
@@ -33,9 +33,10 @@ class BaseTrainer():
             text = text.cuda()
             mask = mask.cuda()
             sel_label = sel_label.cuda()
+            type_id = type_id.cuda()
             label = label.cuda(async=True)
 
-            out = self.model(text, mask, sel_label)
+            out = self.model(text, mask, type_id, sel_label)
             if self.mode == 'baseline':
                 out = out[0]
             else:
@@ -81,7 +82,7 @@ class BaseTrainer():
                 for key, value in info.items():
                     self.logger.add_scalar(key, value, curr_step + 1)
             # save model
-            if curr_step > 1 and curr_step % 1000==0:
+            if curr_step > 1 and curr_step % 10==0:
                 self.fn_save({
                     'step':curr_step,
                     'state_dict':self.model.state_dict(),
@@ -97,14 +98,15 @@ class BaseTrainer():
         val_losses = AverageMeter(0)
         val_acc = AverageMeter(0)
         self.model.eval()
-        for batch_index, (text, mask, sel_label, label)\
+        for batch_index, (text, mask, sel_label, label, type_id)\
                                                     in enumerate(val_loader):
             text = text.cuda()
             mask = mask.cuda()
             sel_label = sel_label.cuda()
+            type_id = type_id.cuda()
             label = label.cuda(async=True)
             with torch.no_grad():
-                out = self.model(text, mask, sel_label)[0]
+                out = self.model(text, mask, sel_label, type_id)[0]
                 acc_sel, _ = self.performance(out, text, mask, sel_label, label)
                 loss_sel = 0
                 for dim in range(out.size(1)): # iterate over seq length

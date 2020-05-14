@@ -13,7 +13,8 @@ class TweetDataset(BaseDataset):
       Dataset for Tweet Sentiment Extraction
     """
     def __init__(self, data_path,
-                 max_length=64
+                 max_length=64,
+                 qa=False
                 ):
         
         super(TweetDataset, self).__init__()
@@ -27,6 +28,14 @@ class TweetDataset(BaseDataset):
                     'negative': 1,
                     'positive': 2
         }
+        self.sent_id = {
+                    0: 7974,
+                    1: 2430,
+                    2: 1313
+        }
+        self.qa = qa # question answering mode
+        if self.qa:
+            print('\n\n Running with Question Answering Mode...')
         self.parse(self.data_path)
         self.tokenizer = BertTokenizer.from_pretrained(
                 'bert-base-uncased',
@@ -52,7 +61,7 @@ class TweetDataset(BaseDataset):
             self.sel_text_list.append(sel_text)
             self.label.append(label)
 
-    def tokenize_and_getSelLabel(self, text, sel_text):
+    def tokenize_and_getSelLabel(self, text, sel_text, sent):
         encoded_dict = self.tokenizer.encode_plus(
                         text,
                         add_special_tokens = True,
@@ -75,24 +84,43 @@ class TweetDataset(BaseDataset):
         start += 1
         end += 1
         sel_label[:, start:end+1] = 1.0
+        type_id = torch.zeros(encoded_dict['input_ids'].size()).long()
         
         # initailize buffer
         if self.buffer_cache is None:
-            self.buffer_cache = tuple([encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label])
+            self.buffer_cache = tuple([encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label, type_id])
+        
+        if self.qa:
+            insert_loc = encoded_dict['input_ids'].size(1) - 1
+            while encoded_dict['input_ids'][0, insert_loc].item() == 0:
+                insert_loc -= 1
+            insert_loc += 1
+            # need at least 2 spaces
+            if insert_loc >= encoded_dict['input_ids'].size(1)-1:
+                pass
+            else:
+                encoded_dict['input_ids'][0, insert_loc] = self.sent_id[sent]
+                encoded_dict['input_ids'][0, insert_loc + 1] = 102
+                encoded_dict['attention_mask'][0, insert_loc:insert_loc+2] = 1
+                type_id[0, insert_loc:] = 1
+            if self.buffer_cache is None:
+                self.buffer_cache = tuple([encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label, type_id])
 
-        return encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label
+        return encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label, type_id
 
 
     def __getitem__(self, index):
         text, sel_text, label = self.text_list[index], self.sel_text_list[index],\
                                                     self.label[index]
         try:
-            text_ids, text_mask, sel_text_label = \
-            self.tokenize_and_getSelLabel(text, sel_text)
+            text_ids, text_mask, sel_text_label, type_id = \
+            self.tokenize_and_getSelLabel(text, sel_text, label)
+        
         except:
             self.invalid_cnt += 1
-            text_ids, text_mask, sel_text_label = self.buffer_cache
-        return text_ids.squeeze(), text_mask.squeeze(), sel_text_label.squeeze(), torch.LongTensor([label])
+            text_ids, text_mask, sel_text_label, type_id = self.buffer_cache
+        
+        return text_ids.squeeze(), text_mask.squeeze(), sel_text_label.squeeze(), torch.LongTensor([label]), type_id.squeeze()
 
     def __len__(self):
         return len(self.text_list)

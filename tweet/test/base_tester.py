@@ -17,10 +17,11 @@ class BaseTester():
         outputs, texts, masks, sel_labels, labels = [], [], [], [], []
 
         with torch.no_grad():
-            for batch_index, (text, mask, sel_label, label) in enumerate(data_loader):
+            for batch_index, (text, mask, sel_label, label, type_id) in enumerate(data_loader):
                 text = text.cuda()
                 mask = mask.cuda()
-                output = self.model(text, mask)[0]
+                type_id = type_id.cuda()
+                output = self.model(text, mask, type_id)[0]
                 outputs.append(output)
                 texts.append(text)
                 masks.append(mask)

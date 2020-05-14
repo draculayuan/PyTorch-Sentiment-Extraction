@@ -13,11 +13,12 @@ class BaseInfer():
         preds, masks, ori_ids, sents, df_ids = [], [], [], [], []
 
         with torch.no_grad():
-            for batch_index, (text, mask, label, ori_tok, df_id) in enumerate(data_loader):
+            for batch_index, (text, mask, label, ori_tok, df_id, type_id) in enumerate(data_loader):
                 sents.append(label)
                 text = text.cuda()
                 mask = mask.cuda()
-                pred = self.model(text, mask)[0] #only pred sel text needed
+                type_id = type_id.cuda()
+                pred = self.model(text, mask, type_id)[0] #only pred sel text needed
                 preds.append(pred)
                 masks.append(mask)
                 ori_ids.append(text)

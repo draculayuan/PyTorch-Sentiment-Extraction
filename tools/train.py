@@ -59,11 +59,13 @@ def main(args):
     # load dataset
     train_dataset = TweetDataset(
         args.train_file,
-        args.max_length
+        args.max_length,
+        args.qa
     )
     val_dataset = TweetDataset(
         args.test_file,
         args.max_length,
+        args.qa
     )
 
 	# learning rate scheduler

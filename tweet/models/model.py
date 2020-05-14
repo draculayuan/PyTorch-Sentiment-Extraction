@@ -30,9 +30,10 @@ class Model(nn.Module):
             self.sent_clf = nn.Linear(768*2, 3) # times 2 cuz bidirect
             torch.nn.init.normal_(self.sent_clf.weight, std=0.02)
             
-    def forward(self, batch_texts, batch_masks, batch_sel_labels=None):
+    def forward(self, batch_texts, batch_masks, batch_types, batch_sel_labels=None):
+
         _, _, feat = self.bert(batch_texts,
-                                 token_type_ids = None,
+                                 token_type_ids = batch_types,
                                  attention_mask = batch_masks)
         # feat contains initial embedding + hidden feat of all 12 layers
         feat_backup = feat

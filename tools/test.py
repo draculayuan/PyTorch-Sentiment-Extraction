@@ -40,7 +40,8 @@ def main(args):
 
     test_dataset = TweetDataset(
         args.test_file,
-        args.max_length
+        args.max_length,
+        args.qa
     )
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False,
         num_workers=1, pin_memory=False, collate_fn=tweet_collate_fn)
