@@ -82,7 +82,7 @@ class BaseTrainer():
                 for key, value in info.items():
                     self.logger.add_scalar(key, value, curr_step + 1)
             # save model
-            if curr_step > 1 and curr_step % 10==0:
+            if curr_step > 1 and curr_step % 1000==0:
                 self.fn_save({
                     'step':curr_step,
                     'state_dict':self.model.state_dict(),
