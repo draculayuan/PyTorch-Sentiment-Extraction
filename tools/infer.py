@@ -49,8 +49,7 @@ def main(args):
         'textID': ids
     })
     result = result[['textID', 'selected_text']]
-    result.index += 1
-    result.to_csv(args.out_path)
+    result.to_csv(args.out_path, index=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Test")
