@@ -1,6 +1,6 @@
 config=${1}
 
-if [[ $# -eq 2 ]]; then
+if [ $# -eq 2 ]; then
   job_name=${2}
 else
   job_name=training
