@@ -29,9 +29,9 @@ class InferDataset(BaseDataset):
                     'positive': 2
         }
         self.sent_id = {
-                    0: 7974,
-                    1: 2430,
-                    2: 1313
+                    0: 8699,
+                    1: 4997,
+                    2: 3893
         }
         self.qa = qa
         if self.qa:
