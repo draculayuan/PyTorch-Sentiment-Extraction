@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import torch
 from . import BaseDataset
-#for bert tokenization
-from transformers import BertTokenizer
+import tokenizers
+#from transformers import BertTokenizer
 
 class TweetDataset(BaseDataset):
     """
@@ -37,13 +37,12 @@ class TweetDataset(BaseDataset):
         if self.qa:
             print('\n\n Running with Question Answering Mode...')
         self.parse(self.data_path)
-        self.tokenizer = BertTokenizer.from_pretrained(
-                'bert-base-uncased',
-                do_lower_case=True
+        self.tokenizer = tokenizers.BertWordPieceTokenizer(
+            '/home/liu/DL_workstation/tweet-sent/tweet-pytorch/tools/vocab.txt',
+            lowercase=True
         )
         self.invalid_cnt = 0
-        self.buffer_cache = None
-
+        
     def parse(self, data_path):
         assert data_path[-3:] == 'csv'
         file = pd.read_csv(data_path)
@@ -61,66 +60,76 @@ class TweetDataset(BaseDataset):
             self.sel_text_list.append(sel_text)
             self.label.append(label)
 
-    def tokenize_and_getSelLabel(self, text, sel_text, sent):
-        encoded_dict = self.tokenizer.encode_plus(
-                        text,
-                        add_special_tokens = True,
-                        max_length = self.max_length,
-                        pad_to_max_length = True,
-                        return_attention_mask = True,
-                        return_tensors = 'pt',
-                        )
-        t_text = self.tokenizer.tokenize(text)
-        t_sel_text = self.tokenizer.tokenize(sel_text) 
-        sel_len = len(t_sel_text)
-
-        for i in range(len(t_text)-sel_len+1):
-            if t_text[i:i+sel_len] == t_sel_text:
-                start = i
-                end = i + sel_len - 1
+    def tokenize_and_getSelLabel(self, tweet, selected_text, sentiment):
+        len_st = len(selected_text)
+        idx0 = None
+        idx1 = None
+        for ind in (i for i, e in enumerate(tweet) if e == selected_text[0]):
+            if tweet[ind: ind+len_st] == selected_text:
+                idx0 = ind
+                idx1 = ind + len_st - 1
                 break
-        sel_label = torch.zeros_like(encoded_dict['input_ids'])
-        # offset from tokenizer
-        start += 1
-        end += 1
-        sel_label[:, start:end+1] = 1.0
-        type_id = torch.zeros(encoded_dict['input_ids'].size()).long()
-        
-        # initailize buffer
-        if self.buffer_cache is None:
-            self.buffer_cache = tuple([encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label, type_id])
-        
-        if self.qa:
-            insert_loc = encoded_dict['input_ids'].size(1) - 1
-            while encoded_dict['input_ids'][0, insert_loc].item() == 0:
-                insert_loc -= 1
-            insert_loc += 1
-            # need at least 2 spaces
-            if insert_loc >= encoded_dict['input_ids'].size(1)-1:
-                pass
-            else:
-                encoded_dict['input_ids'][0, insert_loc] = self.sent_id[sent]
-                encoded_dict['input_ids'][0, insert_loc + 1] = 102
-                encoded_dict['attention_mask'][0, insert_loc:insert_loc+2] = 1
-                type_id[0, insert_loc:] = 1
-            if self.buffer_cache is None:
-                self.buffer_cache = tuple([encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label, type_id])
 
-        return encoded_dict['input_ids'], encoded_dict['attention_mask'], sel_label, type_id
+        char_targets = [0] * len(tweet)
+        if idx0 != None and idx1 != None:
+            for ct in range(idx0, idx1 + 1):
+                char_targets[ct] = 1
+
+        tok_tweet = self.tokenizer.encode(tweet)
+        input_ids_orig = tok_tweet.ids[1:-1]
+        tweet_offsets = tok_tweet.offsets[1:-1]
+
+        target_idx = []
+        for j, (offset1, offset2) in enumerate(tweet_offsets):
+            if sum(char_targets[offset1: offset2]) > 0:
+                target_idx.append(j)
+
+        targets_start = target_idx[0]
+        targets_end = target_idx[-1]
+
+        input_ids = [101] + input_ids_orig + [102]
+        token_type_ids = [0] * (len(input_ids_orig) + 2)
+        mask = [1] * len(token_type_ids)
+        tweet_offsets = [(0,0)] + tweet_offsets + [(0,0)]
+        targets_start += 1
+        targets_end += 1
+        sel_label = [0] * len(input_ids)
+        for idx in range(targets_start, targets_end+1):
+            sel_label[idx] = 1
+
+        if self.qa:
+            input_ids += [self.sent_id[sentiment]] + [102]
+            token_type_ids += [1] * 2
+            mask += [1] * 2
+            tweet_offsets += [(0,0)] * 2
+            sel_label += [0] * 2
+
+        padding_length = self.max_length - len(input_ids)
+        if padding_length > 0:
+            input_ids = input_ids + ([0] * padding_length)
+            mask = mask + ([0] * padding_length)
+            token_type_ids = token_type_ids + ([0] * padding_length)
+            tweet_offsets = tweet_offsets + ([(0, 0)] * padding_length)
+            sel_label = sel_label + [0] * padding_length
+
+        return {
+            'ids': input_ids[:self.max_length],
+            'mask': mask[:self.max_length],
+            'token_type_ids': token_type_ids[:self.max_length],
+            'sel_label': sel_label[:self.max_length],
+            'offsets': tweet_offsets[:self.max_length]
+        }
 
 
     def __getitem__(self, index):
         text, sel_text, label = self.text_list[index], self.sel_text_list[index],\
                                                     self.label[index]
-        try:
-            text_ids, text_mask, sel_text_label, type_id = \
-            self.tokenize_and_getSelLabel(text, sel_text, label)
         
-        except:
-            self.invalid_cnt += 1
-            text_ids, text_mask, sel_text_label, type_id = self.buffer_cache
+        inputs = self.tokenize_and_getSelLabel(text, sel_text, label)
         
-        return text_ids.squeeze(), text_mask.squeeze(), sel_text_label.squeeze(), torch.LongTensor([label]), type_id.squeeze()
+        return torch.LongTensor(inputs['ids']), torch.LongTensor(inputs['mask']),\
+            torch.LongTensor(inputs['sel_label']), torch.LongTensor([label]),\
+            torch.LongTensor(inputs['token_type_ids']), inputs['offsets'], text, sel_text
 
     def __len__(self):
         return len(self.text_list)

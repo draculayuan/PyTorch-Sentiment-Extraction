@@ -14,10 +14,12 @@ class BaseTester():
                 print(param)
         '''        
     def test(self, data_loader):
-        outputs, texts, masks, sel_labels, labels = [], [], [], [], []
+        outputs, texts, masks, sel_labels, labels, offsets, rawtexts, rawseltexts = \
+                            [], [], [], [], [], [], [], []
 
         with torch.no_grad():
-            for batch_index, (text, mask, sel_label, label, type_id) in enumerate(data_loader):
+            for batch_index, (text, mask, sel_label, label, type_id, offset, rawtext, rawseltext)\
+                                                                           in enumerate(data_loader):
                 text = text.cuda()
                 mask = mask.cuda()
                 type_id = type_id.cuda()
@@ -27,5 +29,8 @@ class BaseTester():
                 masks.append(mask)
                 sel_labels.append(sel_label)
                 labels.append(label)
+                offsets.append(offset)
+                rawtexts.append(rawtext)
+                rawseltexts.append(rawseltext)
 
-        return outputs, texts, masks, sel_labels, labels
+        return outputs, texts, masks, sel_labels, labels, offsets, rawtexts, rawseltexts

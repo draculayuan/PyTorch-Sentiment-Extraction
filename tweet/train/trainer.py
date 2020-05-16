@@ -3,7 +3,6 @@ import operator
 from torch.autograd import Variable
 import torch.nn as nn
 from .base_trainer import BaseTrainer
-from transformers import BertTokenizer
 
 class Trainer(BaseTrainer):
 
@@ -11,13 +10,11 @@ class Trainer(BaseTrainer):
         super(Trainer, self).__init__(model, criterion, save_path, scheduler, job_name)
         self.mode = mode
         self.pred_neutral = pred_neutral
-        self.tokenizer = BertTokenizer.from_pretrained(
-            'bert-base-uncased', do_lower_case=True)
         print('\n\n Trainer Initialized with training mode: {}'.format(self.mode))
         if not self.pred_neutral:
             print('Igoring neutral when predicting sentiment')
 
-    def performance(self, output, text, mask, sel_label, label):
+    def performance(self, output, text, mask, sel_label, label, offset, rawtext, rawseltext):
         def jaccard(str1, str2): 
             a = set(str1.lower().split()) 
             b = set(str2.lower().split())
@@ -31,20 +28,22 @@ class Trainer(BaseTrainer):
             temp = torch.argmax(output[idx], dim=1)
             temp[mask[idx]==0] = 0
             start = 1 # skip cls token
-            end = sum(mask[idx]).item() - 2 # skip sep token
+            end = sum(mask[idx]).item() - 2 # #to be adjusted for QA mode
             while start <= end and temp[start].item() != 1:
                 start += 1
             while start <= end and temp[end].item() != 1:
                 end -= 1
-
-            if label[idx].item() == 0 or sum(mask[idx]).item() <= 5:
-                pred_tok = text[idx][1:sum(mask[idx]).item()-1]
+                
+            if label[idx].item() == 0 or len(rawtext[idx].split()) < 2:
+                pred_tok = rawtext[idx]
             else:
-                pred_tok = text[idx][start:end+1]
-            pred_tok = self.tokenizer.decode(pred_tok)
-            sel_tok = text[idx][sel_label[idx]==1]
-            sel_tok = self.tokenizer.decode(sel_tok)
+                pred_tok = ""
+                for i in range(start, end+1):
+                    pred_tok += rawtext[idx][offset[idx][i][0]:offset[idx][i][1]]
+                    if (i+1) < len(offset[idx]) and offset[idx][i][1] < offset[idx][i+1][0]:
+                        pred_tok += " "
+
             # Step 2, cal jaccard
-            jac += jaccard(pred_tok, sel_tok)
+            jac += jaccard(pred_tok, rawseltext[idx])
             pred_toks.append(pred_tok)
         return jac / output.size(0), pred_toks

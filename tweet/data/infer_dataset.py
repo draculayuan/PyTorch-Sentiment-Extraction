@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import torch
 from . import BaseDataset
-#for bert tokenization
-from transformers import BertTokenizer
+import tokenizers
+#from transformers import BertTokenizer
 
 class InferDataset(BaseDataset):
     """
@@ -37,12 +37,11 @@ class InferDataset(BaseDataset):
         if self.qa:
             print('\n\n Inferring with Question Answering Mode...')
         self.parse(self.data_path)
-        self.tokenizer = BertTokenizer.from_pretrained(
-                'bert-base-uncased',
-                do_lower_case=True
+        self.tokenizer = tokenizers.BertWordPieceTokenizer(
+            '/home/liu/DL_workstation/tweet-sent/tweet-pytorch/tools/vocab.txt',
+            lowercase=True
         )
         self.invalid_cnt = 0
-        self.buffer_cache = None
 
     def parse(self, data_path):
         assert data_path[-3:] == 'csv'
@@ -59,41 +58,46 @@ class InferDataset(BaseDataset):
             self.text_list.append(text)
             self.label.append(label)
 
-    def tokenize_and_getSelLabel(self, text, sent):
-        encoded_dict = self.tokenizer.encode_plus(
-                        text,
-                        add_special_tokens = True,
-                        max_length = self.max_length,
-                        pad_to_max_length = True,
-                        return_attention_mask = True,
-                        return_tensors = 'pt',
-                        )
-        t_text = self.tokenizer.tokenize(text)
-        type_id = torch.zeros_like(encoded_dict['input_ids']).long()
+    def tokenize_and_getSelLabel(self, tweet, sentiment):
+        tok_tweet = self.tokenizer.encode(tweet)
+        input_ids_orig = tok_tweet.ids[1:-1]
+        tweet_offsets = tok_tweet.offsets[1:-1]
+        
+        input_ids = [101] + input_ids_orig + [102]
+        token_type_ids = [0] * (len(input_ids_orig) + 2)
+        mask = [1] * len(token_type_ids)
+        tweet_offsets = [(0,0)] + tweet_offsets + [(0,0)]
         
         if self.qa:
-            insert_loc = encoded_dict['input_ids'].size(1) - 1
-            while encoded_dict['input_ids'][0, insert_loc].item() == 0:
-                insert_loc -= 1
-            insert_loc += 1
-            # need at least 2 spaces
-            if insert_loc >= encoded_dict['input_ids'].size(1)-1:
-                pass
-            else:
-                encoded_dict['input_ids'][0, insert_loc] = self.sent_id[sent]
-                encoded_dict['input_ids'][0, insert_loc + 1] = 102
-                encoded_dict['attention_mask'][0, insert_loc:insert_loc+2] = 1
-                type_id[0, insert_loc:] = 1
-                
-        return encoded_dict['input_ids'], encoded_dict['attention_mask'], t_text, type_id
+            input_ids += [self.sent_id[sentiment]] + [102]
+            token_type_ids += [1] * 2
+            mask += [1] * 2
+            tweet_offsets += [(0,0)] * 2
+            
+        padding_length = self.max_length - len(input_ids)
+        if padding_length > 0:
+            input_ids = input_ids + ([0] * padding_length)
+            mask = mask + ([0] * padding_length)
+            token_type_ids = token_type_ids + ([0] * padding_length)
+            tweet_offsets = tweet_offsets + ([(0, 0)] * padding_length)
+        
+        return {
+            'ids': input_ids[:self.max_length],
+            'mask': mask[:self.max_length],
+            'token_type_ids': token_type_ids[:self.max_length],
+            'offsets': tweet_offsets[:self.max_length]
+        }
 
 
     def __getitem__(self, index):
         df_id, text, label = self.id_list[index], self.text_list[index], self.label[index]
 
-        text_ids, text_mask, ori_tokens, type_ids = self.tokenize_and_getSelLabel(text, label) # this text_id is not the textID in the original csv file.
+        inputs = self.tokenize_and_getSelLabel(text, label) 
+        
+        return torch.LongTensor(inputs['ids']), torch.LongTensor(inputs['mask']),\
+                torch.LongTensor([label]), torch.LongTensor(inputs['token_type_ids']), \
+                inputs['offsets'], text, df_id
 
-        return text_ids.squeeze(), text_mask.squeeze(), torch.LongTensor([label]), ori_tokens, df_id, type_ids.squeeze()
 
     def __len__(self):
         return len(self.text_list)

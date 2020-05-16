@@ -1,3 +1,6 @@
+__pycache__/
+*.py[cod]
 
 /ckpt/*
-/configs/sent*
+/configs/*
+/tweet/unit_tests/*

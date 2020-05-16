@@ -25,7 +25,8 @@ class BaseTrainer():
         train_losses = AverageMeter(10)
         train_acc = AverageMeter(10)
         
-        for batch_index, (text, mask, sel_label, label, type_id) in enumerate(train_loader):
+        for batch_index, (text, mask, sel_label, label, type_id, offsets, rawtext, rawseltext)\
+                                                                        in enumerate(train_loader):
             curr_step = start_iter+batch_index
             self.scheduler.step(curr_step) # for model optimizer
             lr = optimizer.param_groups[0]['lr']
@@ -58,7 +59,7 @@ class BaseTrainer():
                         pass
                     else:
                         loss_sent += self.criterion(out_sent_, label_)
-            acc_jac, _ = self.performance(out, text, mask, sel_label, label)
+            acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
             
             loss = loss_sel + loss_sent
             reduced_loss = loss.data.clone()
@@ -98,7 +99,7 @@ class BaseTrainer():
         val_losses = AverageMeter(0)
         val_acc = AverageMeter(0)
         self.model.eval()
-        for batch_index, (text, mask, sel_label, label, type_id)\
+        for batch_index, (text, mask, sel_label, label, type_id, offsets, rawtext, rawseltext)\
                                                     in enumerate(val_loader):
             text = text.cuda()
             mask = mask.cuda()
@@ -107,7 +108,7 @@ class BaseTrainer():
             label = label.cuda(async=True)
             with torch.no_grad():
                 out = self.model(text, mask, sel_label, type_id)[0]
-                acc_sel, _ = self.performance(out, text, mask, sel_label, label)
+                acc_sel, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
                 loss_sel = 0
                 for dim in range(out.size(1)): # iterate over seq length
                     loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
