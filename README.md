@@ -10,13 +10,13 @@ A code base for Kaggle's Tweet Sentiment Extraction Competition based on PyTorch
 
 1. Install dependencies:
     - [pytorch>=0.4](https://pytorch.org/)
-    - [transformers] by hugging face
+    - [transformers>=2.8]( by hugging face)
 
 
 ## Train
 
 ```bash
-sh scripts/train.sh path/to/your/configfile
+sh scripts/train.sh path/to/your/configfile model_name
 ```
 
 
@@ -29,6 +29,6 @@ sh scripts/test.sh path/to/your/configfile path/to/saved/model
 ## Inference
 
 ```bash
-sh scripts/infer.sh path/to/your/configfile path/to/saved/model
+sh scripts/infer.sh path/to/your/configfile path/to/saved/model path/to/output/path
 ```
 
