@@ -107,7 +107,7 @@ class BaseTrainer():
             type_id = type_id.cuda()
             label = label.cuda(async=True)
             with torch.no_grad():
-                out = self.model(text, mask, sel_label, type_id)[0]
+                out = self.model(text, mask, type_id, sel_label)[0]
                 acc_sel, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
                 loss_sel = 0
                 for dim in range(out.size(1)): # iterate over seq length

@@ -34,7 +34,7 @@ def main(args):
     random.seed(0)
     '''
     # create model
-    model = models.create(mode=args.mode)
+    model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
     model.cuda()
 
     criterion = nn.CrossEntropyLoss()
@@ -60,12 +60,14 @@ def main(args):
     train_dataset = TweetDataset(
         args.train_file,
         args.max_length,
-        args.qa
+        args.qa,
+        args.model
     )
     val_dataset = TweetDataset(
         args.test_file,
         args.max_length,
-        args.qa
+        args.qa,
+        args.model
     )
 
 	# learning rate scheduler

@@ -24,7 +24,7 @@ def main(args):
     torch.backends.cudnn.benchmark = True
 
     # init model
-    model = models.create(mode = args.mode)
+    model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
     model.cuda()
     if osp.isfile(args.checkpoint):
         load_state(args.checkpoint, model, test=True)
@@ -38,7 +38,8 @@ def main(args):
     infer_dataset = InferDataset(
         args.test_file,
         args.max_length,
-        args.qa
+        args.qa,
+        args.model
     )
     infer_loader = DataLoader(infer_dataset, batch_size=args.batch_size, shuffle=False,
         num_workers=1, pin_memory=False, collate_fn=infer_collate_fn)

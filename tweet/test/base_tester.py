@@ -23,7 +23,7 @@ class BaseTester():
                 text = text.cuda()
                 mask = mask.cuda()
                 type_id = type_id.cuda()
-                output = self.model(text, mask, type_id)[0]
+                output = self.model(text, mask, type_id, sel_label)[0]
                 outputs.append(output)
                 texts.append(text)
                 masks.append(mask)

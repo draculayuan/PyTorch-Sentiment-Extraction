@@ -1,8 +1,12 @@
-from transformers import BertModel
+from transformers import BertModel, RobertaModel
 import torch.nn as nn
 import torch
 
 mode_fact = ['baseline', 'sent-clf', 'sent-ori', 'sent-mask', 'sent-sel', 'sent-cycle', 'sent-sel']
+model_fact = {
+        'bert': BertModel,
+        'roberta': RobertaModel
+}
 class Model(nn.Module):
     def __init__(
         self, 
@@ -10,9 +14,10 @@ class Model(nn.Module):
         output_attentions,
         dropout,
         mode,
+        model,
     ):
         super(Model, self).__init__()
-        self.bert = BertModel.from_pretrained(
+        self.bert = model_fact[model].from_pretrained(
                         model_type,
                         output_attentions = output_attentions,
                         output_hidden_states=True
@@ -80,5 +85,6 @@ class Model(nn.Module):
 def create(model_type = "bert-base-uncased",
         output_attentions = False,
         dropout = 0.1,
-        mode = 'baseline'):
-    return Model(model_type, output_attentions, dropout, mode)
+        mode = 'baseline',
+        model = 'bert'):
+    return Model(model_type, output_attentions, dropout, mode, model)

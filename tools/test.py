@@ -26,7 +26,7 @@ from tweet.utils import load_state
 def main(args):
     torch.backends.cudnn.benchmark = True
     # init model
-    model = models.create(mode=args.mode)
+    model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
         
     model.cuda()
     if osp.isfile(args.checkpoint):
@@ -41,7 +41,8 @@ def main(args):
     test_dataset = TweetDataset(
         args.test_file,
         args.max_length,
-        args.qa
+        args.qa,
+        args.model
     )
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False,
         num_workers=1, pin_memory=False, collate_fn=tweet_collate_fn)
