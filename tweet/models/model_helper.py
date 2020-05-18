@@ -37,7 +37,7 @@ def sentimented_embedding(model,
     # add in sentiment, but note that this sentiment is being affected by position id (at least i think)
     for sample_idx in range(embedding_output.size(0)):
         end_pos = input_ids.size(1) - 1
-        while input_ids[sample_idx, end_pos].item() != 2: # 2 is the end tag for RoBERTa
+        while end_pos > 0 and input_ids[sample_idx, end_pos].item() != 2: # 2 is the end tag for RoBERTa
             end_pos -= 1
 
         if end_pos < 5 or input_ids[sample_idx, end_pos-2].item() != 2:
