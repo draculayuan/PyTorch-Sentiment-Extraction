@@ -33,7 +33,12 @@ def main(args):
     torch.backends.cudnn.benchmark = False #initially true, dont know if ok to turn off
     random.seed(0)
     '''
+    # logical constrains
     assert args.model in ['bert', 'roberta']
+    if args.mode == 'embed-cat':
+        assert args.model == 'roberta'
+        assert args.qa == True
+    
     # create model
     model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
     model.cuda()

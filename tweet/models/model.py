@@ -1,8 +1,18 @@
 from transformers import BertModel, RobertaModel
 import torch.nn as nn
 import torch
+from .model_helper import sentimented_embedding
 
-mode_fact = ['baseline', 'sent-clf', 'sent-ori', 'sent-mask', 'sent-sel', 'sent-cycle', 'sent-sel']
+mode_fact = [
+             'baseline', 
+             'sent-clf', 
+             'sent-ori', 
+             'sent-mask', 
+             'sent-sel', 
+             'sent-cycle', 
+             'sent-sel',
+             'embed-cat', # not exactly concatenating, adding actually
+            ]
 model_fact = {
         'bert': BertModel,
         'roberta': RobertaModel
@@ -36,10 +46,16 @@ class Model(nn.Module):
             torch.nn.init.normal_(self.sent_clf.weight, std=0.02)
             
     def forward(self, batch_texts, batch_masks, batch_types, batch_sel_labels=None):
-
-        _, _, feat = self.bert(batch_texts,
-                                 token_type_ids = batch_types,
-                                 attention_mask = batch_masks)
+        
+        if self.mode == 'embed-cat':
+            _, _, feat = sentimented_embedding(self.bert, 
+                                              batch_texts,
+                                              token_type_ids = batch_types,
+                                              attention_mask = batch_masks)
+        else:
+            _, _, feat = self.bert(batch_texts,
+                                     token_type_ids = batch_types,
+                                     attention_mask = batch_masks)
         # feat contains initial embedding + hidden feat of all 12 layers
         feat_backup = feat
         feat = torch.cat((feat[-1], feat[-2]), dim=-1)

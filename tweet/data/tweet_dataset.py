@@ -145,7 +145,7 @@ class TweetDataset(BaseDataset):
                 
             if self.qa:
                 input_ids += [2] + [self.sent_id[sentiment]] + [2]
-                token_type_ids += [0] * 3 #roberta does not use it during pretrianing, can finetune
+                token_type_ids += [0] * 3 #roberta does not use it during pretraining, can finetune
                 mask += [1] * 3
                 tweet_offsets += [(0,0)] * 3
                 sel_label += [0] * 3

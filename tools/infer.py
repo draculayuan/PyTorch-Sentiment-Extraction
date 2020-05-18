@@ -21,7 +21,12 @@ from tweet.data import InferDataset, infer_collate_fn
 from tweet.utils import load_state
             
 def main(args):
+    # logical constrains
     assert args.model in ['bert', 'roberta']
+    if args.mode == 'embed-cat':
+        assert args.model == 'roberta'
+        assert args.qa == True
+        
     torch.backends.cudnn.benchmark = True
 
     # init model
