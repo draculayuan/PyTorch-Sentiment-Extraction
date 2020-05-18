@@ -17,8 +17,8 @@ class TweetDataset(BaseDataset):
                  qa=False,
                  model='bert'
                 ):
-        
         super(TweetDataset, self).__init__()
+        assert model in ['bert', 'roberta']
         self.data_path = data_path
         self.text_list = list()
         self.sel_text_list = list()

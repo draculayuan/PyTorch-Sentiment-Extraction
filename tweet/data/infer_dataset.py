@@ -17,8 +17,8 @@ class InferDataset(BaseDataset):
                  qa=False,
                  model='bert'
                 ):
-        
         super(InferDataset, self).__init__()
+        assert model in ['bert', 'roberta']
         self.data_path = data_path
         self.id_list = list()
         self.text_list = list()
@@ -75,10 +75,10 @@ class InferDataset(BaseDataset):
 
     def tokenize_and_getSelLabel(self, tweet, sentiment):
         tok_tweet = self.tokenizer.encode(tweet)
-        input_ids_orig = tok_tweet.ids[1:-1]
-        tweet_offsets = tok_tweet.offsets[1:-1]
         
         if self.model == 'bert':
+            input_ids_orig = tok_tweet.ids[1:-1]
+            tweet_offsets = tok_tweet.offsets[1:-1]
             input_ids = [101] + input_ids_orig + [102]
             token_type_ids = [0] * (len(input_ids_orig) + 2)
             mask = [1] * len(token_type_ids)
@@ -98,6 +98,8 @@ class InferDataset(BaseDataset):
                 tweet_offsets = tweet_offsets + ([(0, 0)] * padding_length)
         
         elif self.model == 'roberta':
+            input_ids_orig = tok_tweet.ids
+            tweet_offsets = tok_tweet.offsets
             input_ids = [0] + input_ids_orig + [2] 
             token_type_ids = [0] * (len(input_ids_orig) + 2)
             mask = [1] * len(token_type_ids)

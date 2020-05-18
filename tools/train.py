@@ -33,6 +33,7 @@ def main(args):
     torch.backends.cudnn.benchmark = False #initially true, dont know if ok to turn off
     random.seed(0)
     '''
+    assert args.model in ['bert', 'roberta']
     # create model
     model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
     model.cuda()

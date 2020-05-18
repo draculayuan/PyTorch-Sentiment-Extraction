@@ -24,6 +24,7 @@ from tweet.utils import load_state
 
 
 def main(args):
+    assert args.model in ['bert', 'roberta']
     torch.backends.cudnn.benchmark = True
     # init model
     model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)

@@ -21,6 +21,7 @@ from tweet.data import InferDataset, infer_collate_fn
 from tweet.utils import load_state
             
 def main(args):
+    assert args.model in ['bert', 'roberta']
     torch.backends.cudnn.benchmark = True
 
     # init model
