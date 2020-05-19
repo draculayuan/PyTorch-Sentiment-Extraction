@@ -55,7 +55,7 @@ class BaseTrainer():
             for dim in range(out.size(1)): # iterate over seq length
                 loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
             loss_sent = 0
-            if self.mode not in ['baseline', 'embed-cat']:
+            if 'sent' in self.mode:
                 if self.pred_neutral:
                     loss_sent += self.criterion(out_sent, label.squeeze())
                 else:

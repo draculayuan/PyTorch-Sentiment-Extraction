@@ -38,7 +38,7 @@ class Model(nn.Module):
         torch.nn.init.normal_(self.clf.weight, std=0.02)
         if 'loc' in mode:
             self.loc_clf = nn.Linear(768*2, 2)
-             torch.nn.init.normal_(self.loc_clf.weight, std=0.02)
+            torch.nn.init.normal_(self.loc_clf.weight, std=0.02)
         # mode
         self.mode = mode
         assert self.mode in mode_fact
@@ -68,7 +68,7 @@ class Model(nn.Module):
         out = self.clf(out)
         if 'loc' in self.mode:
             loc = self.drop(feat)
-            loc = self.loc_clf(out)
+            loc = self.loc_clf(loc)
             return [out, loc]
         # depreciated
         if self.mode == 'sent-ori':
