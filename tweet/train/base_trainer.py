@@ -6,6 +6,7 @@ import torch.distributed as dist
 import numpy as np
 import sys
 from ..utils import dist_init, DistModule, reduce_gradients, AverageMeter, save_checkpoint, IterLRScheduler, get_time
+from ..loss import loc_loss
 from tensorboardX import SummaryWriter
 import time
 import random
@@ -36,15 +37,20 @@ class BaseTrainer():
             sel_label = sel_label.cuda()
             type_id = type_id.cuda()
             label = label.cuda(async=True)
-
+            
+            loss = 0
+            
             out = self.model(text, mask, type_id, sel_label)
             if self.mode in ['baseline', 'embed-cat']:
                 out = out[0]
+            elif 'loc' in self.mode:
+                out, out_loc = out
+                loss += loc_loss(out_loc, sel_label)
             else:
                 out, out_sent = out
             #TODO
             # out shape bs x seq x 2, sel_label shape bs x seq
-            loss = 0
+            
             loss_sel = 0
             for dim in range(out.size(1)): # iterate over seq length
                 loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
@@ -61,7 +67,7 @@ class BaseTrainer():
                         loss_sent += self.criterion(out_sent_, label_)
             acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
             
-            loss = loss_sel + loss_sent
+            loss += (loss_sel + loss_sent)
             reduced_loss = loss.data.clone()
             reduced_acc = acc_jac
 

@@ -12,6 +12,7 @@ mode_fact = [
              'sent-cycle', 
              'sent-sel',
              'embed-cat', # not exactly concatenating, adding actually
+             'loc_loss', # baseline with addition start end location loss
             ]
 model_fact = {
         'bert': BertModel,
@@ -35,6 +36,9 @@ class Model(nn.Module):
         self.drop = nn.Dropout(dropout)
         self.clf = nn.Linear(768*2, 2)
         torch.nn.init.normal_(self.clf.weight, std=0.02)
+        if 'loc' in mode:
+            self.loc_clf = nn.Linear(768*2, 2)
+             torch.nn.init.normal_(self.loc_clf.weight, std=0.02)
         # mode
         self.mode = mode
         assert self.mode in mode_fact
@@ -62,12 +66,17 @@ class Model(nn.Module):
         # feat shape: b x seq x 1536
         out = self.drop(feat)
         out = self.clf(out)
-        
+        if 'loc' in self.mode:
+            loc = self.drop(feat)
+            loc = self.loc_clf(out)
+            return [out, loc]
+        # depreciated
         if self.mode == 'sent-ori':
             _, sent = self.sent_feat(feat)
             sent = torch.cat((sent[0], sent[1]), dim=1)
             sent = self.sent_clf(sent)
             return [out, sent]
+        # depreciated
         elif self.mode == 'sent-mask':
             sent = []
             for idx in range(feat.size(0)):
@@ -82,10 +91,12 @@ class Model(nn.Module):
             sent = torch.cat(tuple(sent), dim=0)
             sent = self.sent_clf(sent)
             return [out, sent]
+        # depreciated
         elif self.mode == 'sent-clf':
             sent = torch.cat((feat_backup[-1], feat_backup[-2]), dim=-1)[:, 0, :]
             sent = self.sent_clf(sent)
             return [out, sent]
+        # depreciated
         elif self.mode == 'sent-sel':
             sent = []
             for idx in range(feat.size(0)):
