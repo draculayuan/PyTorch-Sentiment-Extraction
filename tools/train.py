@@ -43,7 +43,14 @@ def main(args):
     model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
     model.cuda()
 
-    criterion = nn.CrossEntropyLoss()
+    # criterion
+    if args.weighted_loss:
+        print('\n Using weighted loss \n')
+        assert 'sent' not in args.mode # because this loss is also shared with sent head, you cant use the same loss weight for both tasks
+        weight = torch.FloatTensor([1.0/(args.max_length-8), 1.0/8]).cuda()
+        criterion = nn.CrossEntropyLoss(weight=weight)
+    else:
+        criterion = nn.CrossEntropyLoss()
 
     optim = args.optim.lower()
     if optim == 'sgd':
