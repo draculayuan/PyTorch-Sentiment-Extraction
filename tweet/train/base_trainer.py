@@ -50,10 +50,6 @@ class BaseTrainer():
                 out, out_sent = out
             #TODO
             # out shape bs x seq x 2, sel_label shape bs x seq
-            
-            loss_sel = 0
-            for dim in range(out.size(1)): # iterate over seq length
-                loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
             loss_sent = 0
             if 'sent' in self.mode:
                 if self.pred_neutral:
@@ -65,7 +61,16 @@ class BaseTrainer():
                         pass
                     else:
                         loss_sent += self.criterion(out_sent_, label_)
-            acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
+            loss_sel = 0
+            if 'loc' in self.mode:
+                if 'pure' not in self.mode:
+                    for dim in range(out.size(1)): # iterate over seq length
+                        loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
+                acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext, out_loc=out_loc)
+            else:
+                for dim in range(out.size(1)): # iterate over seq length
+                    loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
+                acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
             
             loss += (loss_sel + loss_sent)
             reduced_loss = loss.data.clone()
@@ -113,11 +118,16 @@ class BaseTrainer():
             type_id = type_id.cuda()
             label = label.cuda(async=True)
             with torch.no_grad():
-                out = self.model(text, mask, type_id, sel_label)[0]
-                acc_sel, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
                 loss_sel = 0
-                for dim in range(out.size(1)): # iterate over seq length
-                    loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
+                if 'loc' in self.mode: # CLF dominants
+                    out, out_loc = self.model(text, mask, type_id, sel_label)
+                    acc_sel, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext, out_loc=out_loc)
+                    loss_sel += loc_loss(out_loc, sel_label)
+                else:
+                    out = self.model(text, mask, type_id, sel_label)[0]
+                    acc_sel, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
+                    for dim in range(out.size(1)): # iterate over seq length
+                        loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
                 reduced_loss = loss_sel.data.clone()
                 reduced_acc = acc_sel
                       

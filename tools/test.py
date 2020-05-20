@@ -42,7 +42,7 @@ def main(args):
 
     # init tester
     print('initializing tester...')
-    tester = tweet.test.Tester(model)
+    tester = tweet.test.Tester(model, args.mode)
 
     test_dataset = TweetDataset(
         args.test_file,

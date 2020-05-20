@@ -14,7 +14,7 @@ class Trainer(BaseTrainer):
         if not self.pred_neutral:
             print('Igoring neutral when predicting sentiment')
 
-    def performance(self, output, text, mask, sel_label, label, offset, rawtext, rawseltext):
+    def performance(self, output, text, mask, sel_label, label, offset, rawtext, rawseltext, out_loc=None):
         def jaccard(str1, str2): 
             a = set(str1.lower().split()) 
             b = set(str2.lower().split())
@@ -25,14 +25,22 @@ class Trainer(BaseTrainer):
         pred_toks = []
         for idx in range(output.size(0)):
             # Step 1, extract pred_tok from origin_tok
-            temp = torch.argmax(output[idx], dim=1)
-            temp[mask[idx]==0] = 0
-            start = 1 # skip cls token
-            end = sum(mask[idx]).item() - 2 # #to be adjusted for QA mode
-            while start <= end and temp[start].item() != 1:
-                start += 1
-            while start <= end and temp[end].item() != 1:
-                end -= 1
+            if out_loc is None:
+                # NER Style
+                temp = torch.argmax(output[idx], dim=1)
+                temp[mask[idx]==0] = 0
+                start = 1 # skip cls token
+                end = sum(mask[idx]).item() - 2 # #to be adjusted for QA mode
+                while start <= end and temp[start].item() != 1:
+                    start += 1
+                while start <= end and temp[end].item() != 1:
+                    end -= 1
+            else:
+                # CLF Style
+                start = torch.argmax(out_loc[idx][:,0], dim=0).item()
+                end = torch.argmax(out_loc[idx][:,1], dim=0).item()
+                if start > end:
+                    start = end
                 
             if label[idx].item() == 0 or len(rawtext[idx].split()) < 2:
                 pred_tok = rawtext[idx]

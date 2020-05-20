@@ -39,7 +39,7 @@ def main(args):
 
     # init inference
     print('initializing inferencing...')
-    inferer = tweet.infer.Infer(model)
+    inferer = tweet.infer.Infer(model, args.mode)
 
     infer_dataset = InferDataset(
         args.test_file,

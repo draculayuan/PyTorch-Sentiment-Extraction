@@ -13,6 +13,7 @@ mode_fact = [
              'sent-sel',
              'embed-cat', # not exactly concatenating, adding actually
              'loc_loss', # baseline with addition start end location loss
+             'loc-pure'
             ]
 model_fact = {
         'bert': BertModel,
