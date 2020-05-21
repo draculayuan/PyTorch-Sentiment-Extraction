@@ -35,10 +35,17 @@ class Model(nn.Module):
                         output_hidden_states=True
                      )
         self.drop = nn.Dropout(dropout)
-        self.clf = nn.Linear(768*2, 2)
+        if 'base' in model_type:
+            hidden_dim = 768
+        elif 'large' in model_type:
+            hidden_dim = 1024
+        else:
+            raise ValueError('Model Type not implemented.')
+
+        self.clf = nn.Linear(hidden_dim*2, 2)
         torch.nn.init.normal_(self.clf.weight, std=0.02)
         if 'loc' in mode:
-            self.loc_clf = nn.Linear(768*2, 2)
+            self.loc_clf = nn.Linear(hidden_dim*2, 2)
             torch.nn.init.normal_(self.loc_clf.weight, std=0.02)
         # mode
         self.mode = mode
@@ -46,8 +53,8 @@ class Model(nn.Module):
         if 'sent' in self.mode:
             print('\n Sentiment Booster: {} \n'.format(self.mode))
             if 'clf' not in self.mode:
-                self.sent_feat = nn.GRU(768*2, 768, batch_first=True, bidirectional=True)
-            self.sent_clf = nn.Linear(768*2, 3) # times 2 cuz bidirect
+                self.sent_feat = nn.GRU(hidden_dim*2, hidden_dim, batch_first=True, bidirectional=True)
+            self.sent_clf = nn.Linear(hidden_dim*2, 3) # times 2 cuz bidirect
             torch.nn.init.normal_(self.sent_clf.weight, std=0.02)
             
     def forward(self, batch_texts, batch_masks, batch_types, batch_sel_labels=None):
