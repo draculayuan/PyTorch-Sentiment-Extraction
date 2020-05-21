@@ -44,10 +44,10 @@ def main(args):
     model.cuda()
 
     # criterion
-    if args.weighted_loss:
+    if args.weighted_loss is not None:
         print('\n Using weighted loss \n')
         assert 'sent' not in args.mode # because this loss is also shared with sent head, you cant use the same loss weight for both tasks
-        weight = torch.FloatTensor([1.0/(args.max_length-8), 1.0/8]).cuda()
+        weight = torch.FloatTensor(args.weighted_loss).cuda()
         criterion = nn.CrossEntropyLoss(weight=weight)
     else:
         criterion = nn.CrossEntropyLoss()
