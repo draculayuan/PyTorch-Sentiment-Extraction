@@ -71,6 +71,19 @@ def main(args):
         
     # train-val loop
     for idx in range(args.k):
+        # GC
+        try:
+            del model
+            del train_sampler
+            del train_loader
+            del val_loader
+            del optimizer
+            del lr_scheduler
+            del trainer
+            del tester
+        except Exception as e: 
+            print(e)
+            
         # initializing model
         # create model
         model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
