@@ -43,3 +43,20 @@ class Infer(BaseInfer):
                 flat_id.append(b_dfids[idx])
         
         return text_pred, flat_id
+    
+    def get_raw(self, data_loader):
+        preds, masks, sents, offsets, rawtexts, dfids, loc_preds = super().infer(data_loader)
+
+        flat_raw = []
+        for (b_preds, b_masks, b_sents, b_offsets, b_rawtexts, b_dfids, b_locpreds) in \
+                                    zip(preds, masks, sents, offsets, rawtexts, dfids, loc_preds):
+            for idx in range(b_preds.size(0)):
+                flat_raw.append([b_preds[idx],\
+                                b_masks[idx],\
+                                b_sents[idx],\
+                                b_offsets[idx],\
+                                b_rawtexts[idx],\
+                                b_dfids[idx],\
+                                b_locpreds[idx]])
+        
+        return flat_raw
