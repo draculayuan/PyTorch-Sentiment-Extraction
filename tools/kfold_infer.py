@@ -47,7 +47,7 @@ def main(args):
             del model
         except:
             pass
-        model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
+        model = models.create(model_type=args.model_type, mode=args.mode, model=args.model, head=args.head)
         model.cuda()
         try:
             load_state(args.save_path+'/'+str(args.iter)\

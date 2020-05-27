@@ -30,7 +30,7 @@ def main(args):
     torch.backends.cudnn.benchmark = True
 
     # init model
-    model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
+    model = models.create(model_type=args.model_type, mode=args.mode, model=args.model, head=args.head)
     model.cuda()
     if osp.isfile(args.checkpoint):
         load_state(args.checkpoint, model, test=True)

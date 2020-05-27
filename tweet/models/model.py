@@ -1,7 +1,7 @@
 from transformers import BertModel, RobertaModel
 import torch.nn as nn
 import torch
-from .model_helper import sentimented_embedding
+from .model_helper import sentimented_embedding, CNN_clf
 
 mode_fact = [
              'baseline', 
@@ -19,6 +19,11 @@ model_fact = {
         'bert': BertModel,
         'roberta': RobertaModel
 }
+
+loc_head = {
+        'nn': nn.Linear,
+        'cnn': CNN_clf
+}
 class Model(nn.Module):
     def __init__(
         self, 
@@ -27,6 +32,7 @@ class Model(nn.Module):
         dropout,
         mode,
         model,
+        head,
     ):
         super(Model, self).__init__()
         self.bert = model_fact[model].from_pretrained(
@@ -41,12 +47,16 @@ class Model(nn.Module):
             hidden_dim = 1024
         else:
             raise ValueError('Model Type not implemented.')
-
+        # NER Classifier
         self.clf = nn.Linear(hidden_dim*2, 2)
         torch.nn.init.normal_(self.clf.weight, std=0.02)
         if 'loc' in mode:
-            self.loc_clf = nn.Linear(hidden_dim*2, 2)
-            torch.nn.init.normal_(self.loc_clf.weight, std=0.02)
+            print('Using {} for LOC clf'.format(head))
+            self.loc_clf = loc_head[head](hidden_dim*2, 2)
+            try:
+                torch.nn.init.normal_(self.loc_clf.weight, std=0.02)
+            except:
+                pass
         # mode
         self.mode = mode
         assert self.mode in mode_fact
@@ -121,5 +131,6 @@ def create(model_type = "bert-base-uncased",
         output_attentions = False,
         dropout = 0.1,
         mode = 'baseline',
-        model = 'bert'):
-    return Model(model_type, output_attentions, dropout, mode, model)
+        model = 'bert',
+        head = 'nn'):
+    return Model(model_type, output_attentions, dropout, mode, model, head)

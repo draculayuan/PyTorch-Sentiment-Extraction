@@ -40,7 +40,7 @@ def main(args):
         assert args.qa == True
     
     # create model
-    model = models.create(model_type=args.model_type, mode=args.mode, model=args.model)
+    model = models.create(model_type=args.model_type, mode=args.mode, model=args.model, head=args.head)
     model.cuda()
 
     # criterion

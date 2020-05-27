@@ -1,4 +1,39 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class CNN_clf(nn.Module):
+    def __init__(self, feat_dim, place_holder=None):
+        '''
+        placeholder is not used, is to sync with nn.Linear
+        '''
+        super(CNN_clf, self).__init__()
+        self.start = []
+        self.start.append(nn.Conv1d(feat_dim, feat_dim // 2, kernel_size=2))
+        self.start.append(nn.LeakyReLU())
+        self.start = nn.Sequential(*self.start)
+        self.start_clf = nn.Linear(feat_dim // 2, 1)
+        torch.nn.init.normal_(self.start_clf.weight, std=0.02)
+        
+        self.end = []
+        self.end.append(nn.Conv1d(feat_dim, feat_dim // 2, kernel_size=2))
+        self.end.append(nn.LeakyReLU())
+        self.end = nn.Sequential(*self.end)
+        self.end_clf = nn.Linear(feat_dim // 2, 1)
+        torch.nn.init.normal_(self.end_clf.weight, std=0.02)
+        
+    def forward(self, feat):
+        # convert B x Seq x F ==> B x F x Seq
+        feat = feat.permute(0, 2, 1)
+        feat = F.pad(feat, (0, 1), 'constant', 0)
+        start = self.start(feat)
+        start = start.permute(0, 2, 1)
+        start = self.start_clf(start)
+        end = self.end(feat)
+        end = end.permute(0, 2, 1)
+        end = self.end_clf(end)
+        
+        return torch.cat((start, end), dim = 2)
 
 def sentimented_embedding(model,
                           input_ids,
