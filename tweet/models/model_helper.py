@@ -2,6 +2,42 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class GRU_clf(nn.Module):
+    def __init__(self, feat_dim, place_holder=None):
+        super(GRU_clf, self).__init__()
+        self.gru = nn.GRU(feat_dim, feat_dim // 2, batch_first=True, bidirectional=True)
+        self.act = nn.LeakyReLU()
+        self.clf_s = nn.Linear(feat_dim, 1)
+        torch.nn.init.normal_(self.clf_s.weight, std=0.02)
+        self.clf_e = nn.Linear(feat_dim, 1)
+        torch.nn.init.normal_(self.clf_e.weight, std=0.02)
+        
+    def forward(self, feat):
+        feat, (_, _) = self.gru(feat)
+        feat = self.act(feat)
+        # B x seq x feat_dim
+        start = self.clf_s(feat)
+        end = self.clf_e(feat)
+        return torch.cat((start, end), dim = 2)
+
+class LSTM_clf(nn.Module):
+    def __init__(self, feat_dim, place_holder=None):
+        super(LSTM_clf, self).__init__()
+        self.lstm = nn.LSTM(feat_dim, feat_dim // 2, batch_first=True, bidirectional=True)
+        self.act = nn.LeakyReLU()
+        self.clf_s = nn.Linear(feat_dim, 1)
+        torch.nn.init.normal_(self.clf_s.weight, std=0.02)
+        self.clf_e = nn.Linear(feat_dim, 1)
+        torch.nn.init.normal_(self.clf_e.weight, std=0.02)
+        
+    def forward(self, feat):
+        feat, (_, _) = self.lstm(feat)
+        feat = self.act(feat)
+        # B x seq x feat_dim
+        start = self.clf_s(feat)
+        end = self.clf_e(feat)
+        return torch.cat((start, end), dim = 2)
+
 class CNN_clf(nn.Module):
     def __init__(self, feat_dim, place_holder=None):
         '''

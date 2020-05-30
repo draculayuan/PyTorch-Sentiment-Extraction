@@ -50,6 +50,7 @@ class BaseTrainer():
                 out, out_sent = out
             #TODO
             # out shape bs x seq x 2, sel_label shape bs x seq
+            '''
             loss_sent = 0
             if 'sent' in self.mode:
                 if self.pred_neutral:
@@ -61,6 +62,7 @@ class BaseTrainer():
                         pass
                     else:
                         loss_sent += self.criterion(out_sent_, label_)
+            '''
             loss_sel = 0
             if 'loc' in self.mode:
                 if 'pure' not in self.mode:
@@ -72,7 +74,7 @@ class BaseTrainer():
                     loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
                 acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext)
             
-            loss += (loss_sel + loss_sent)
+            loss += loss_sel # + loss_sent
             reduced_loss = loss.data.clone()
             reduced_acc = acc_jac
 
