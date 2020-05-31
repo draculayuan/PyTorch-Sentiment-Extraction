@@ -18,7 +18,10 @@ loc_head = {
         'nn': nn.Linear,
         'cnn': CNN_clf,
         'lstm': LSTM_clf,
-        'gru': GRU_clf
+        'gru': GRU_clf,
+        'nn-cnn': [nn.Linear, CNN_clf],
+        'cnn-gru': [CNN_clf, GRU_clf],
+        'nn-gru': [nn.Linear, GRU_clf]
 }
 class Model(nn.Module):
     def __init__(
@@ -47,12 +50,19 @@ class Model(nn.Module):
         self.clf = nn.Linear(hidden_dim*2, 2)
         torch.nn.init.normal_(self.clf.weight, std=0.02)
         if 'loc' in mode:
+            self.loc_clf = []
             print('Using {} for LOC clf'.format(head))
-            self.loc_clf = loc_head[head](hidden_dim*2, 2)
-            try:
-                torch.nn.init.normal_(self.loc_clf.weight, std=0.02)
-            except:
-                pass
+            if type(loc_head[head]) != list:
+                self.loc_clf.append(loc_head[head](hidden_dim*2, 2))
+            else:
+                for h in loc_head[head]:
+                    self.loc_clf.append(h(hidden_dim*2, 2))
+            for i in range(len(self.loc_clf)):
+                try:
+                    torch.nn.init.normal_(self.loc_clf[i].weight, std=0.02)
+                except:
+                    pass
+            self.loc_clf = nn.ModuleList(self.loc_clf)
         # mode
         self.mode = mode
         assert self.mode in mode_fact
@@ -74,10 +84,16 @@ class Model(nn.Module):
         # feat shape: b x seq x 1536
         out = self.drop(feat)
         out = self.clf(out)
+        locs = tuple()
+        loc = self.drop(feat)
         if 'loc' in self.mode:
-            loc = self.drop(feat)
-            loc = self.loc_clf(loc)
-            return [out, loc]
+            for clf in self.loc_clf:
+                locs += (clf(loc),)
+            if self.training:
+                return [out, locs]
+            else:
+                # avg during test
+                return [out, sum(locs)/len(locs)]
 
         return [out]
 

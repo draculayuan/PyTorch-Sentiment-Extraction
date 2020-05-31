@@ -45,9 +45,10 @@ class BaseTrainer():
                 out = out[0]
             elif 'loc' in self.mode:
                 out, out_loc = out
-                loss += loc_loss(out_loc, sel_label)
+                for out_loc_ in out_loc:
+                    loss += loc_loss(out_loc_, sel_label)
             else:
-                out, out_sent = out
+                raise ValueError('mode not exist...')
             #TODO
             # out shape bs x seq x 2, sel_label shape bs x seq
             '''
@@ -68,7 +69,7 @@ class BaseTrainer():
                 if 'pure' not in self.mode:
                     for dim in range(out.size(1)): # iterate over seq length
                         loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
-                acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext, out_loc=out_loc)
+                acc_jac, _ = self.performance(out, text, mask, sel_label, label, offsets, rawtext, rawseltext, out_loc=sum(out_loc)/len(out_loc))
             else:
                 for dim in range(out.size(1)): # iterate over seq length
                     loss_sel += self.criterion(out[:, dim, :], sel_label[:, dim])
