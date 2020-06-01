@@ -21,7 +21,8 @@ loc_head = {
         'gru': GRU_clf,
         'nn-cnn': [nn.Linear, CNN_clf],
         'cnn-gru': [CNN_clf, GRU_clf],
-        'nn-gru': [nn.Linear, GRU_clf]
+        'nn-gru': [nn.Linear, GRU_clf],
+        'nn-cnn-gru': [nn.Linear, CNN_clf, GRU_clf]
 }
 class Model(nn.Module):
     def __init__(
